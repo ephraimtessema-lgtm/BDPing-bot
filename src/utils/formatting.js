@@ -1,4 +1,5 @@
 import { getMonthName } from "./validation.js";
+import { birthdayAnnouncementMessage, formatGroupBirthdayList } from "../messages/birthday.messages.js";
 
 const SHORT_MONTHS = {
   1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr",
@@ -77,12 +78,7 @@ export function formatBirthdayAnnouncement(celebrants) {
     return null;
   }
 
-  const lines = [
-    "🎂 Today's Birthdays:",
-    "Let's wish our birthday stars a very Happy Birthday! 🎉",
-  ];
-
-  for (const celebrant of celebrants) {
+  const mentions = celebrants.map((celebrant) => {
     const userId =
       celebrant.telegram_user_id ??
       celebrant.telegramUserId ??
@@ -91,56 +87,10 @@ export function formatBirthdayAnnouncement(celebrants) {
 
     const rawFirstName = getCelebrantFirstName(celebrant);
     const escapedFirstName = escapeHtml(rawFirstName);
-    const clickableMention = `<a href="tg://user?id=${userId}">${escapedFirstName}</a>`;
+    return `<a href="tg://user?id=${userId}">${escapedFirstName}</a>`;
+  });
 
-    lines.push(`🎉 Happy Birthday, ${clickableMention}! 🎂`);
-  }
-
-  return lines.join("\n\n");
+  return birthdayAnnouncementMessage(mentions);
 }
 
-/**
- * Formats a list of group birthdays chronologically.
- * @param {string} groupTitle 
- * @param {Array<{ name: string, username?: string, birth_month: number, birth_day: number }>} birthdays 
- * @returns {string} Formatted Telegram message
- */
-export function formatGroupBirthdayList(groupTitle, birthdays) {
-  if (!birthdays || birthdays.length === 0) {
-    return (
-      `📅 <b>Birthdays for ${escapeHtml(groupTitle)}</b>\n\n` +
-      `No birthdays registered in this group yet!\n\n` +
-      `<i>Members can register their birthday privately with @BDPingBot.</i>`
-    );
-  }
-
-  // Group by month
-  const groupedByMonth = {};
-  for (const b of birthdays) {
-    if (!groupedByMonth[b.birth_month]) {
-      groupedByMonth[b.birth_month] = [];
-    }
-    groupedByMonth[b.birth_month].push(b);
-  }
-
-  let message = `🎂 <b>Birthdays in ${escapeHtml(groupTitle)}</b> (${birthdays.length})\n\n`;
-
-  // Sort months chronologically starting from current month or Jan
-  const months = Object.keys(groupedByMonth).map(Number).sort((a, b) => a - b);
-
-  for (const month of months) {
-    const monthName = getMonthName(month);
-    message += `<b>🗓️ ${monthName}</b>\n`;
-    
-    // Sort days within month
-    const list = groupedByMonth[month].sort((a, b) => a.birth_day - b.birth_day);
-    for (const b of list) {
-      const handle = b.username ? ` (@${escapeHtml(b.username)})` : "";
-      message += `  • <b>${b.birth_day} ${SHORT_MONTHS[b.birth_month]}</b> — ${escapeHtml(b.name)}${handle}\n`;
-    }
-    message += "\n";
-  }
-
-  message += `🔒 <i>Members can register or update their birthdays privately with @BDPingBot.</i>`;
-  return message.trim();
-}
+export { formatGroupBirthdayList };

@@ -1,6 +1,12 @@
 import { birthdayService } from "../../services/birthday.service.js";
-import { formatBirthday, escapeHtml } from "../../utils/formatting.js";
+import { formatBirthday } from "../../utils/formatting.js";
 import { InlineKeyboard } from "grammy";
+import {
+  groupManagementPrivacyNotice,
+  deleteBirthdayEmptyMessage,
+  deleteBirthdayConfirmMessage,
+  deleteBirthdaySelectGroupMessage,
+} from "../../messages/index.js";
 
 /**
  * /deletebirthday command handler
@@ -12,20 +18,16 @@ export async function deleteBirthdayCommand(ctx) {
   const isPrivate = ctx.chat.type === "private";
 
   if (!isPrivate) {
-    return ctx.reply(
-      `🔒 Birthday commands only work in private chat: @${ctx.me.username}`,
-      { reply_to_message_id: ctx.message?.message_id }
-    );
+    return ctx.reply(groupManagementPrivacyNotice(ctx.me.username), {
+      reply_to_message_id: ctx.message?.message_id,
+    });
   }
 
   // --- Private Chat Flow ---
   const userGroups = await birthdayService.listUserRegistrationsAcrossGroups(ctx.from.id);
 
   if (userGroups.length === 0) {
-    return ctx.reply(
-      `ℹ️ You don't have any registered birthdays to delete.`,
-      { parse_mode: "HTML" }
-    );
+    return ctx.reply(deleteBirthdayEmptyMessage(), { parse_mode: "HTML" });
   }
 
   if (userGroups.length === 1) {
@@ -35,9 +37,7 @@ export async function deleteBirthdayCommand(ctx) {
       .text("❌ Cancel", "del_cancel");
 
     return ctx.reply(
-      `⚠️ <b>Confirm Deletion</b>\n\n` +
-      `Are you sure you want to remove your birthday (${formatBirthday(reg.birthMonth, reg.birthDay)}) from <b>${escapeHtml(reg.groupTitle)}</b>?\n\n` +
-      `You will no longer receive birthday announcements in that group.`,
+      deleteBirthdayConfirmMessage(reg.groupTitle, formatBirthday(reg.birthMonth, reg.birthDay)),
       { parse_mode: "HTML", reply_markup: keyboard }
     );
   }
@@ -49,9 +49,8 @@ export async function deleteBirthdayCommand(ctx) {
   }
   keyboard.text("❌ Cancel", "del_cancel");
 
-  return ctx.reply(
-    `🗑️ <b>Select Group Record to Delete</b>\n\n` +
-    `Choose which group's birthday record you would like to delete:`,
-    { parse_mode: "HTML", reply_markup: keyboard }
-  );
+  return ctx.reply(deleteBirthdaySelectGroupMessage(), {
+    parse_mode: "HTML",
+    reply_markup: keyboard,
+  });
 }

@@ -12,6 +12,11 @@ import { birthdaysCommand } from "./bot/commands/birthdays.js";
 import { inviteCommand } from "./bot/commands/invite.js";
 import { announcementService } from "./services/announcement.service.js";
 import { privateTextHandler, callbackQueryHandler } from "./bot/handlers/private-chat.js";
+import {
+  groupWelcomeMessage,
+  pingReplyMessage,
+  chatIdReplyMessage,
+} from "./messages/index.js";
 
 // 1. Validate environment variables
 const requiredEnv = [
@@ -38,12 +43,12 @@ bot.command("help", helpCommand);
 
 // Ping (Preserved working functionality)
 bot.command("ping", async (ctx) => {
-  await ctx.reply("🏓 Pong! BD Ping is alive!");
+  await ctx.reply(pingReplyMessage());
 });
 
 // Chat ID (Preserved working functionality)
 bot.command("chatid", async (ctx) => {
-  await ctx.reply(`This chat's ID is: ${ctx.chat.id}`);
+  await ctx.reply(chatIdReplyMessage(ctx.chat.id));
 });
 
 // Reusable private registration invitation link for groups (Admins only in groups)
@@ -67,12 +72,7 @@ bot.on("my_chat_member", async (ctx) => {
       const inviteLink = `https://t.me/${ctx.me.username}?start=invite_${ctx.chat.id}`;
       await ctx.api.sendMessage(
         ctx.chat.id,
-        `🎂 <b>BD Ping is ready for ${ctx.chat.title || "this group"}!</b>\n\n` +
-        `I will automatically celebrate members' birthdays on their special day!\n\n` +
-        `🔒 <b>100% Private Registration:</b> Members never need to enter or announce their birthdays in this chat.\n\n` +
-        `📌 <b>Admins:</b> Pin this link for members to register privately:\n` +
-        `${inviteLink}\n\n` +
-        `View group birthdays: /birthdays`,
+        groupWelcomeMessage(ctx.chat.title, inviteLink),
         { parse_mode: "HTML" }
       );
       console.log(`[BD Ping] Activated for group: ${ctx.chat.title} (${ctx.chat.id})`);

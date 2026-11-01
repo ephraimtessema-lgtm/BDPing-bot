@@ -1,5 +1,9 @@
 import { birthdayService } from "../../services/birthday.service.js";
-import { formatGroupBirthdayList } from "../../utils/formatting.js";
+import {
+  formatGroupBirthdayList,
+  privateBirthdaysEmptyMessage,
+  privateBirthdaysSelectGroupMessage,
+} from "../../messages/index.js";
 import { InlineKeyboard } from "grammy";
 
 /**
@@ -26,13 +30,7 @@ export async function birthdaysCommand(ctx) {
   const userRegistrations = await birthdayService.listUserRegistrationsAcrossGroups(ctx.from.id);
 
   if (userRegistrations.length === 0) {
-    return ctx.reply(
-      `📅 <b>Group Birthday Calendars</b>\n\n` +
-      `You haven't registered in any groups yet!\n\n` +
-      `• To view birthdays for a group, type <code>/birthdays</code> directly inside that group chat.\n` +
-      `• To register your birthday, open the invitation link provided by your group admin.`,
-      { parse_mode: "HTML" }
-    );
+    return ctx.reply(privateBirthdaysEmptyMessage(), { parse_mode: "HTML" });
   }
 
   if (userRegistrations.length === 1) {
@@ -48,9 +46,8 @@ export async function birthdaysCommand(ctx) {
     keyboard.text(`📅 ${reg.groupTitle}`, `view_bday_${reg.groupId}`).row();
   }
 
-  return ctx.reply(
-    `📅 <b>View Group Birthdays</b>\n\n` +
-    `Select one of your registered groups to view its birthday calendar:`,
-    { parse_mode: "HTML", reply_markup: keyboard }
-  );
+  return ctx.reply(privateBirthdaysSelectGroupMessage(), {
+    parse_mode: "HTML",
+    reply_markup: keyboard,
+  });
 }
